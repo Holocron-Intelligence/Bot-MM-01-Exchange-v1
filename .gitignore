@@ -179,3 +179,27 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# ========== ZEROONE PROJECT ==========
+# NEVER commit private keys!
+id.json
+*.pem
+
+# Backtest data & reports
+data/
+reports/
+
+# Runtime logs
+*.log
+paper_trading.log
+launcher_ultra_stable.log
+
+# Build artifacts
+dist/
+*.exe
+
+# IDE
+.vscode/
+
+# PnL results
+pnl_results.json

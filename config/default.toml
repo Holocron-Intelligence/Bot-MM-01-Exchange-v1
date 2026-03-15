@@ -1,0 +1,68 @@
+[general]
+capital = 100.0                    # [USD] Starting capital for sizing calculations
+timeframe = "1m"                  # Candle timeframe: 1m (faster), 3m, 5m (more stable)
+paper_mode = true                 # SET TO FALSE FOR REAL TRADING
+
+[markets]
+# Symbols to trade. High volume 추천: HYPEUSD, SUIUSD, BERAUSD
+symbols = ["AAVEUSD", "APTUSD", "BERAUSD", "HYPEUSD", "SUIUSD"]
+excluded = []                     # Automatically populated based on performance
+
+[market_maker]
+# --- STRATEGY PRESETS ---
+# SAFE: spread_bps=15, fixed_tp_bps=5
+# STANDARD: spread_bps=8, fixed_tp_bps=2
+# FARMING: spread_bps=5, fixed_tp_bps=1
+
+spread_bps = 8                   # Distance from mid-price to place orders
+order_size_pct = 10.0             # % of capital per order (recomm: 5-15%)
+max_inventory_pct = 45.0          # Max bias toward one side (long/short)
+stale_candles = 20                # Max age of a position in candles before closing
+use_atr_spread = true             # Adjust spread based on volatility
+atr_spread_mult = 0.5            # Multiplier for ATR-based spread
+min_spread_bps = 5                # Never go below this spread
+fixed_tp_bps = 2                    # Profit target per trade
+inventory_skew_factor = 0.5       # How aggressively to reduce position bias
+stop_loss_bps = 35                # Hard stop distance
+volatiltiy_pause_mult = 1.5       # Halt trading if volatility > 1.5x average
+
+[grid]
+levels = 8                        # Number of orders on each side
+spacing_atr_mult = 0.5            # Distance between grid levels
+rebalance_threshold = 0.3         # Price movement to trigger grid update
+max_open_orders = 16              # Total active orders allowed
+
+[indicators]
+rsi_period = 14
+rsi_overbought = 70
+rsi_oversold = 30
+adx_period = 14
+adx_trend_threshold = 25          # Trend strength filter
+atr_period = 14
+vwap_session_hours = 24           # Time window for VWAP calculation
+vwap_max_distance_pct = 2.0       # Ignore signals too far from VWAP
+momentum_period = 10
+
+[heatmap]
+# Advanced orderbook analysis
+update_interval = "candle"        
+depth_levels = 20                 
+rolling_window_minutes = 30       
+ema_smoothing = 5                 
+min_liquidity_ratio = 0.1         
+
+[risk]
+risk_per_trade_pct = 1.0          
+max_daily_drawdown_pct = 5.0      # Bot stops if daily loss > 5%
+max_position_pct = 20.0           # Max capital in a single coin
+min_spread_bps = 5                
+max_spread_bps = 100              
+
+[fees]
+# 01 Exchange Specifics
+maker_fee_pct = 0.01              # Maker rebate/fee
+taker_fee_pct = 0.035             # Taker fee
+
+[backtest]
+slippage_bps = 0                  
+initial_capital = 100.0

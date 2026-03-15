@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZEROONE | Pro Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="main-wrapper">
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-brand">
+                    <div class="title-group">
+                        <h1 class="neon-text">ZEROONE ENGINE</h1>
+                        <span style="color: var(--text-muted); font-size: 11px; letter-spacing: 1px;">INSTITUTIONAL LIQUIDITY PROVIDER</span>
+                    </div>
+                </div>
+                <div id="status-badge" class="status-badge idle" style="margin-left: 20px;">
+                    <span id="status-text" class="neon-text">SYSTEM READY</span>
+                </div>
+                <div class="header-actions" style="margin-left: auto; display: flex; gap: 15px; align-items: center;">
+                    <span id="clock" style="font-family: var(--mono); color: var(--accent);">--:--:--</span>
+                    <button class="btn btn-primary" id="btn-start" onclick="controlBot('start')" style="background: var(--accent); color: #000; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">START</button>
+                    <button class="btn btn-danger" id="btn-stop" onclick="controlBot('stop')" style="background: transparent; color: var(--red); border: 1px solid var(--red); padding: 5px 15px; border-radius: 5px; cursor: pointer;">STOP</button>
+                </div>
+            </header>
+
+            <!-- Dashboard Grid -->
+            <main class="dashboard">
+
+                <!-- Stat Cards -->
+                <div class="card">
+                    <div class="stat-title">Available Capital</div>
+                    <div class="stat-value" id="stat-capital">$0.00</div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 5px;" id="stat-initial">Initial: $0.00</div>
+                </div>
+
+                <div class="card">
+                    <div class="stat-title">P&L Today</div>
+                    <div class="stat-value" id="stat-pnl">$0.00</div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 5px;" id="stat-return">Return: 0.00%</div>
+                </div>
+
+                <div class="card">
+                    <div class="stat-title">Fills / Rate</div>
+                    <div class="stat-value" id="stat-trades">0</div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 5px;">Rate: <span id="stat-fillrate">0.0%</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="stat-title">Bot Mode</div>
+                    <div class="stat-value" id="stat-mode">INITIALIZING</div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 5px;" id="stat-uptime">Uptime: --</div>
+                </div>
+
+                <!-- VOLUME HERO -->
+                <div class="card volume-hero-card">
+                    <div class="stat-title">📊 Live Trading Volume</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div>
+                            <div class="stat-value" id="vol-total" style="font-size: 32px;">$0.00</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Generated Volume</div>
+                        </div>
+                        <div style="text-align: right; font-size: 12px;">
+                            <div>Target: <span id="vol-target" style="color: var(--accent);">$100,000</span></div>
+                            <div>Progress: <span id="vol-progress" style="color: var(--accent);">0.0%</span></div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="vol-bar" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Breakdown -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="stat-title">Market Breakdown</div>
+                    <div id="volume-markets" style="margin-top: 10px; font-size: 12px;">
+                        <div style="color: var(--text-muted);">Waiting for engine data...</div>
+                    </div>
+                </div>
+
+                <!-- Positions -->
+                <div class="card" style="grid-column: span 4;">
+                    <div class="stat-title">Active Inventory / Positions</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>SYMBOL</th>
+                                    <th>SIDE</th>
+                                    <th>SIZE</th>
+                                    <th>ENTRY</th>
+                                    <th>MARK</th>
+                                    <th>P&L</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positions-body">
+                                <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">No active positions</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Logs -->
+                <div class="card" style="grid-column: span 4;">
+                    <div class="stat-title">Engine Activity Log</div>
+                    <div id="log-list" style="max-height: 150px; overflow-y: auto; font-family: var(--mono); font-size: 11px; color: var(--text-secondary);">
+                        <div style="padding: 4px 0;">[SYSTEM] Initializing high-speed connection...</div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

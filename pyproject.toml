@@ -1,0 +1,58 @@
+[project]
+name = "mm-bot-01-exchange"
+version = "0.1.0"
+description = "Adaptive grid trading bot for 01 Exchange altcoin perpetuals - by Holocron"
+requires-python = ">=3.11"
+dependencies = [
+    # 01 Exchange API
+    "protobuf>=4.25.0",
+    "cryptography>=42.0.0",
+    "requests>=2.31.0",
+    "base58>=2.1.1",
+    # Async
+    "aiohttp>=3.9.0",
+    "websockets>=12.0",
+    # Data
+    "numpy>=1.26.0",
+    "pandas>=2.1.0",
+    "pyarrow>=14.0.0",
+    # Indicators
+    "ta>=0.11.0",
+    # Config
+    "tomli>=2.0.1",
+    "python-dotenv>=1.0.0",
+    # Logging & CLI
+    "rich>=13.7.0",
+    # Dashboard
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    # Charts
+    "plotly>=5.18.0",
+    # GUI Launcher
+    "customtkinter>=5.2.2",
+    "Pillow>=10.2.0",
+    "tomlkit>=0.12.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[project.scripts]
+bot = "src.cli:main"
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pyright]
+include = ["src", "scripts"]
+extraPaths = ["."]
+pythonVersion = "3.12"
+pythonPlatform = "Windows"
+typeCheckingMode = "basic"
