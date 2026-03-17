@@ -36,7 +36,7 @@ def build():
         "--hidden-import", "darkdetect",
         "--collect-all", "customtkinter",
         "--collect-all", "darkdetect",
-        "--name", "ZeroOne_Bot_v28",
+        "--name", "ZeroOne",
         launcher_script
     ]
 

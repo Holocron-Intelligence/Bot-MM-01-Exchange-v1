@@ -12,6 +12,8 @@ sys.path.insert(0, str(ROOT))
 from src.config import load_config, LOG_DIR
 from src.live.trader import LiveTrader
 from src.dashboard.app import run_dashboard
+import src.dashboard.app as app
+import os
 
 # Setup logging
 log_file = LOG_DIR / "paper_trading.log"
@@ -47,6 +49,18 @@ async def run_bot_with_dashboard():
     mode_str = "PAPER" if cfg.paper_mode else "REAL"
     print(f"CLI_AUDIT: Bot starting. Capital=${cfg.capital}, Mode={mode_str}, Symbols={cfg.active_symbols}")
     logger.info(f"Bot starting in {mode_str} Trading mode with Dashboard...")
+    
+    if not cfg.active_symbols:
+        logger.error("No active symbols configured! Please select at least one coin in the Launcher.")
+        print("ERROR: Cannot start bot without any selected coins.")
+        return
+
+    # Ensure port is set for the dashboard
+    if "DASHBOARD_PORT" not in os.environ:
+        os.environ["DASHBOARD_PORT"] = "8000"
+        
+    # Reset dashboard state so GUI shows correct initial capital
+    app.reset_dashboard(cfg.capital)
     
     # CRITICAL: Start Dashboard FIRST so the UI appears immediately
     # while the bot engine loads market info / candles in the background.

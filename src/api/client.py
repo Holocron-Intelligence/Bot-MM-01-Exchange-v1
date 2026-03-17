@@ -233,7 +233,7 @@ class O1Client:
                         self.stats["api_calls_failed"] += 1
                         try:
                             msg_len, pos = decode_varint(response_data, 0)
-                            actual = response_data[pos : pos + msg_len]
+                            actual = bytes(response_data[pos : pos + msg_len])
                             receipt = schema_pb2.Receipt()
                             receipt.ParseFromString(actual)
                             logger.error(f"Action failed. HTTP {resp.status}, Receipt: {receipt}")
@@ -242,7 +242,7 @@ class O1Client:
                         resp.raise_for_status()
 
                     msg_len, pos = decode_varint(response_data, 0)
-                    actual_data = response_data[pos : pos + msg_len]
+                    actual_data = bytes(response_data[pos : pos + msg_len])
                     receipt = schema_pb2.Receipt()
                     receipt.ParseFromString(bytes(actual_data))
                     return receipt

@@ -95,11 +95,17 @@ zeroone/
 
 ### Step 3 — Launch the bot
 
+Simply run the **Desktop Launcher GUI**:
+
 ```bash
-python -m src.cli --dashboard
+python launcher.py
 ```
 
-Open **[http://localhost:8000](http://localhost:8000)** to view the live dashboard.
+*(If you received the compiled version, simply double-click `ZeroOne.exe` or `Launcher.exe`).*
+
+1. Paste your **Private Key** (Mandatory for Real Trading — you can skip this *only* if you already created `id.json`)
+2. Select the coins you want to trade (minimum 1, limited by your capital)
+3. Click **START BOT** and monitor your profit from the **LIVE MONITOR** tab!
 
 ---
 
@@ -191,7 +197,7 @@ Or select coins from the **Launcher GUI** — no file editing needed.
 | :--- | :---: | :--- |
 | **$50 – $200** | 2 – 4 | HYPE, SUI, BERA |
 | **$200 – $1K** | 5 – 8 | + APT, AAVE, XRP |
-| **$1K+** | 10+ | Full coverage |
+| **$1K+** | 10+ | Full coverage |ntinua
 
 > [!TIP]
 > Fewer coins = bigger orders per pair = better fill rate.
@@ -234,7 +240,7 @@ zeroone/
 | **Drawdown Breaker** | Emergency halt on excessive daily loss |
 | **Volatility Pause** | Stops quoting during price spikes |
 | **Stale Position Mgmt** | Auto-closes old positions to free capital |
-| **Real-time Dashboard** | Live metrics at `localhost:8000` |
+| **Live GUI Monitor** | Real-time desktop metrics and controls |
 | **Paper Trading** | Full simulation before going live |
 
 ---
@@ -242,11 +248,12 @@ zeroone/
 ## 🖥️ Commands
 
 ```bash
-# Launch with dashboard (recommended)
-python -m src.cli --dashboard
+# Launch the Graphical Desktop GUI (Recommended)
+python launcher.py
 
-# Launch CLI only
+# Launch CLI only (Advanced)
 python -m src.cli
+
 
 # Check SOL balance for gas
 python scripts/check_sol.py
@@ -262,7 +269,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 # Edit .env, then place id.json in root
-python -m src.cli --dashboard
+python launcher.py
 ```
 
 ---

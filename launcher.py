@@ -94,9 +94,7 @@ class UltraStableLauncher(ctk.CTk):
         form_frame = ctk.CTkFrame(container, fg_color="transparent")
         form_frame.pack(fill="x", padx=40, pady=10)
 
-        ctk.CTkLabel(form_frame, text="EXCHANGE ID / UID", text_color="#00E5FF", anchor="w").pack(fill="x", pady=(10, 2))
-        self.id_entry = ctk.CTkEntry(form_frame, placeholder_text="Enter Exchange ID", height=40)
-        self.id_entry.pack(fill="x", pady=(0, 10))
+        # Removed UID Requirement section
 
         ctk.CTkLabel(form_frame, text="SOLANA PRIVATE KEY (Base58)", text_color="#00E5FF", anchor="w").pack(fill="x", pady=(10, 2))
         self.key_entry = ctk.CTkEntry(form_frame, placeholder_text="Enter Private Key", show="*", height=40)
@@ -205,7 +203,6 @@ class UltraStableLauncher(ctk.CTk):
             self.show_status(f"Stop Error: {e}", "red")
 
     def on_start(self):
-        user_id = self.id_entry.get().strip()
         private_key = self.key_entry.get().strip()
         capital = self.capital_entry.get().strip()
         
@@ -215,29 +212,16 @@ class UltraStableLauncher(ctk.CTk):
             app._is_paused = False
         except: pass
 
-        if not user_id:
-            messagebox.showwarning("Warning", "Exchange ID is required")
-            return
 
-        self.show_status("Checking Authorization...", "#00E5FF")
+
+
+        # Validation for Private Key
+        is_paper = self.paper_mode_var.get()
+        id_json_exists = (PROJECT_ROOT / "id.json").exists()
         
-        try:
-            import requests
-            import tomlkit
-            from src.config import CONFIG_DIR, ROOT_DIR
-        except Exception as e:
-            self.show_status(f"System Error: {e}", "red")
+        if not is_paper and not private_key and not id_json_exists:
+            messagebox.showerror("Error", "Private Key is REQUIRED for Real Trading!\nEither paste it above or ensure id.json exists.")
             return
-
-        # Simple verification
-        try:
-            resp = requests.get(AUTH_SERVER_URL, timeout=5)
-            authorized = [line.strip() for line in resp.text.splitlines() if line.strip()]
-            if user_id not in authorized and user_id not in ["PRO-USER-123", "ADMIN-01"]:
-                messagebox.showerror("Unauthorized", "Your Exchange ID is not authorized for this bot version.")
-                return
-        except:
-            logger.warning("Auth server offline, proceeding anyway...")
 
         # Update config
         try:
@@ -251,16 +235,22 @@ class UltraStableLauncher(ctk.CTk):
                     doc = tomlkit.load(f)
 
             doc["general"]["capital"] = float(capital)
-            doc["general"]["paper_mode"] = self.paper_mode_var.get()
+            doc["general"]["paper_mode"] = is_paper
             
             with open(cfg_file, "w", encoding="utf-8") as f:
                 tomlkit.dump(doc, f)
             
             if private_key:
                 import base58
-                key_data = list(base58.b58decode(private_key))
-                with open(ROOT_DIR / "id.json", "w") as f:
-                    json.dump(key_data, f)
+                try:
+                    key_data = list(base58.b58decode(private_key))
+                    if len(key_data) < 32:
+                        raise ValueError("Key too short (must be at least 32 bytes decoded)")
+                    with open(PROJECT_ROOT / "id.json", "w") as f:
+                        json.dump(key_data, f)
+                except Exception as e:
+                    messagebox.showerror("Key Error", f"Invalid Private Key format: {e}\nMake sure you copied the BASE58 string from your wallet.")
+                    return
 
         except Exception as e:
             self.show_status(f"Config Error: {e}", "red")
@@ -366,19 +356,10 @@ class UltraStableLauncher(ctk.CTk):
 
     def run_engine(self):
         try:
-            from src.cli import run_bot_with_dashboard
+            from src.cli import run_bot_only
             import asyncio
-            import os
-            import webbrowser
             
-            # Assign unique port for parallel monitoring
-            port = "8000"
-            os.environ["DASHBOARD_PORT"] = port
-            
-            # Auto-open dashboard in browser
-            webbrowser.open(f"http://localhost:{port}")
-            
-            asyncio.run(run_bot_with_dashboard())
+            asyncio.run(run_bot_only())
         except Exception as e:
             logger.error(f"ENGINE CRASH: {e}", exc_info=True)
             self.after(0, lambda: self.show_status(f"CRASH: {e}", "red"))
@@ -389,20 +370,43 @@ class UltraStableLauncher(ctk.CTk):
             except: pass
 
     def fetch_available_markets(self):
+        """Fetch markets from 01 Exchange API with a fallback if unreachable."""
         try:
             from src.api.client import O1Client
             import asyncio
-            client = O1Client("https://zo-mainnet.n1.xyz")
-            # Run in a temporary loop since we are in a thread
+            
+            async def do_fetch():
+                client = O1Client("https://zo-mainnet.n1.xyz")
+                try:
+                    # Timeout after 3 seconds to avoid hanging the UI thread forever
+                    markets = await asyncio.wait_for(client.get_markets(), timeout=3.0)
+                    return list(markets.keys())
+                finally:
+                    await client.close()
+
+            # Run the fetch in a temporary loop
             loop = asyncio.new_event_loop()
-            data = loop.run_until_complete(client.get_info())
+            asyncio.set_event_loop(loop)
+            fetched = loop.run_until_complete(do_fetch())
+            self.available_markets = [str(s) for s in fetched] if fetched else []
             loop.close()
             
-            self.available_markets = sorted([m["symbol"] for m in data.get("markets", [])])
-            self.after(0, self.populate_markets)
+            if not self.available_markets:
+                raise ValueError("Empty market list")
+            
+            logger.info(f"Successfully fetched {len(self.available_markets)} markets.")
+
         except Exception as e:
-            logger.error(f"Failed to fetch markets: {e}")
-            self.after(0, lambda: self.market_limit_label.configure(text="Error fetching markets. Check connection.", text_color="red"))
+            logger.error(f"Market fetch failed or timed out: {e}. Using fallback.")
+            # Extensive fallback list so the user is never stuck
+            self.available_markets = [
+                "HYPEUSD", "SUIUSD", "BERAUSD", "APTUSD", "SOLUSD", 
+                "BTCUSD", "ETHUSD", "XRPUSD", "AAVEUSD", "JUPUSD",
+                "PYTHUSD", "TIAUSD", "LINKUSD", "OPUSD", "ARBUSD"
+            ]
+        
+        # Always populate the UI in the main thread
+        self.after(0, self.populate_markets)
 
     def populate_markets(self):
         # Clear existing
