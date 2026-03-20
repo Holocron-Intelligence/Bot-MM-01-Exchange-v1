@@ -3,7 +3,7 @@
   <img src="assets/agency_logo.jpg" alt="Holocron" width="120" />
 </p>
 
-<h1 align="center">ZeroOne</h1>
+<h1 align="center">ZERO1</h1>
 <p align="center">
   <strong>Professional Market Maker for <a href="https://01.xyz">01 Exchange</a></strong><br/>
   <em>by Holocron — AI Software Agency</em>
@@ -24,7 +24,7 @@
 
 ---
 
-> **🎯 Core Philosophy** — ZeroOne is designed to **generate the highest possible trading volume** while keeping your wallet at **Break-Even**. Farm rebates and rewards by producing massive volume, without losing capital.
+> **🎯 Core Philosophy** — ZERO1 is designed to **generate the highest possible trading volume** while keeping your wallet at **Break-Even**. Farm rebates and rewards by producing massive volume, without losing capital.
 
 > [!NOTE]
 > **Ready out-of-the-box** — ZeroOne works immediately with its default configuration, no changes needed. However, we recommend customizing the parameters in `config/default.toml` to match your personal risk tolerance, capital, and farming goals.
