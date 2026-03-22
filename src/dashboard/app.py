@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -157,15 +157,25 @@ async def get_volumes():
     return JSONResponse(_volume_data)
 
 
+def _check_local_access(request: Request):
+    """Restricts access to local clients only for sensitive endpoints."""
+    client_host = request.client.host if request.client else None
+    if client_host not in ("127.0.0.1", "localhost", "::1"):
+        logger.warning(f"Blocking external access to sensitive API from {client_host}")
+        raise HTTPException(status_code=403, detail="Access restricted to localhost")
+
+
 @app.get("/api/log")
-async def get_log():
+async def get_log(request: Request):
+    _check_local_access(request)
     log_snapshot = list(_activity_log)
     return JSONResponse({"log": log_snapshot[-100:]})
 
 
 @app.post("/api/control")
-async def control(action: dict):
+async def control(request: Request, action: dict):
     """Bot control: start, stop, update params."""
+    _check_local_access(request)
     cmd = action.get("command", "")
     if cmd == "stop":
         _bot_state["status"] = "idle"
@@ -275,6 +285,7 @@ def _add_log(msg: str):
 async def run_dashboard(cfg=None):
     """Run the dashboard server. Suitable for asyncio.gather."""
     port = int(os.getenv("DASHBOARD_PORT", "8000"))
+    host = os.getenv("DASHBOARD_HOST", "127.0.0.1")
     
     # Try to detect local network IP
     hostname = socket.gethostname()
@@ -285,12 +296,16 @@ async def run_dashboard(cfg=None):
 
     print("\n" + "="*50)
     print(f"🚀 DASHBOARD STARTED")
-    print(f"Local:   http://localhost:{port}")
-    if local_ip != "127.0.0.1":
-        print(f"Network: http://{local_ip}:{port}")
+    print(f"Host:    http://{host}:{port}")
+    if host == "0.0.0.0":
+        print(f"Local:   http://localhost:{port}")
+        if local_ip != "127.0.0.1":
+            print(f"Network: http://{local_ip}:{port}")
+        print("\n⚠️  WARNING: Dashboard is exposed to the network (0.0.0.0)!")
+        print("Restrict to 127.0.0.1 for maximum security.")
     print("="*50 + "\n")
 
-    config = uvicorn.Config(app, host="0.0.0.0", port=port, log_level="warning")
+    config = uvicorn.Config(app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
     await server.serve()
 
