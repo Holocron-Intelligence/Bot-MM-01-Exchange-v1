@@ -42,6 +42,21 @@ def generate_html_report(result: BacktestResult, output_path: Path | None = None
         subplot_titles=["Equity Curve", "Drawdown", "Trade P&L"],
     )
 
+    _add_equity_curve(fig, result)
+
+    _add_drawdown_curve(fig, result)
+
+    _add_trade_pnl(fig, result)
+
+    _apply_layout(fig, result)
+
+    fig.write_html(str(output_path), include_plotlyjs="cdn")
+    logger.info("Report generated: %s", output_path)
+    return output_path
+
+
+def _add_equity_curve(fig: go.Figure, result: BacktestResult) -> None:
+    """Add equity curve and initial capital line to the figure."""
     # Equity curve
     fig.add_trace(
         go.Scatter(
@@ -63,7 +78,9 @@ def generate_html_report(result: BacktestResult, output_path: Path | None = None
         annotation_text=f"Initial: ${result.initial_capital}",
     )
 
-    # Drawdown
+
+def _add_drawdown_curve(fig: go.Figure, result: BacktestResult) -> None:
+    """Add drawdown curve to the figure."""
     fig.add_trace(
         go.Scatter(
             x=result.drawdown_curve.index,
@@ -77,6 +94,9 @@ def generate_html_report(result: BacktestResult, output_path: Path | None = None
         row=2, col=1,
     )
 
+
+def _add_trade_pnl(fig: go.Figure, result: BacktestResult) -> None:
+    """Add trade P&L bar chart to the figure."""
     # Trade P&L scatter
     trade_data = [t for t in result.trades if t.pnl != 0]
     if trade_data:
@@ -94,6 +114,9 @@ def generate_html_report(result: BacktestResult, output_path: Path | None = None
             row=3, col=1,
         )
 
+
+def _apply_layout(fig: go.Figure, result: BacktestResult) -> None:
+    """Apply layout and add metrics annotation to the figure."""
     # Layout
     fig.update_layout(
         template="plotly_dark",
@@ -134,7 +157,3 @@ def generate_html_report(result: BacktestResult, output_path: Path | None = None
         bordercolor="#333",
         borderwidth=1,
     )
-
-    fig.write_html(str(output_path), include_plotlyjs="cdn")
-    logger.info("Report generated: %s", output_path)
-    return output_path
