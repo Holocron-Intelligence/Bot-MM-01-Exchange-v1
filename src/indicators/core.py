@@ -95,11 +95,11 @@ def adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     low = df["low"]
     close = df["close"]
 
-    # True Range
+    # True Range (Optimized with numpy instead of pd.concat)
     tr1 = high - low
     tr2 = (high - close.shift(1)).abs()
     tr3 = (low - close.shift(1)).abs()
-    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    tr = np.fmax(tr1, np.fmax(tr2, tr3))
 
     # Directional movement
     up_move = high - high.shift(1)
@@ -140,7 +140,7 @@ def atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     tr1 = high - low
     tr2 = (high - close.shift(1)).abs()
     tr3 = (low - close.shift(1)).abs()
-    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    tr = np.fmax(tr1, np.fmax(tr2, tr3))
 
     return tr.ewm(span=period, adjust=False).mean().rename("atr")
 
