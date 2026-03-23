@@ -29,7 +29,6 @@ import uvicorn
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.config import load_config
 from src.data.storage import list_cached
 
 logger = logging.getLogger(__name__)
@@ -39,7 +38,11 @@ app = FastAPI(title="MM Bot 01 Exchange Dashboard", version="0.2.0")
 # Security: Add CORS middleware to prevent cross-origin requests from reading sensitive data
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000", "http://0.0.0.0:8000"],
+    allow_origins=[
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+        "http://0.0.0.0:8000",
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
@@ -47,6 +50,7 @@ app.add_middleware(
 
 
 from src.config import DATA_DIR, ASSETS_DIR, STATIC_DIR
+
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 if STATIC_DIR.exists():
@@ -63,7 +67,7 @@ else:
 # ? In-memory state (populated by live trader) ?
 
 _bot_state: dict[str, Any] = {
-    "status": "idle",   # idle, running, halted
+    "status": "idle",  # idle, running, halted
     "uptime": 0,
     "start_time": None,
     "paper_mode": True,
@@ -71,6 +75,7 @@ _bot_state: dict[str, Any] = {
 
 _shutdown_requested = False
 _is_paused = False
+
 
 def reset_dashboard(capital: float):
     global _performance, _volume_data, _activity_log, _positions
@@ -96,6 +101,7 @@ def reset_dashboard(capital: float):
     _positions = []
     _bot_state["start_time"] = time.time()
     _bot_state["status"] = "running"
+
 
 _positions: list[dict[str, Any]] = []
 _performance: dict[str, Any] = {
@@ -132,6 +138,7 @@ _ws_clients: list[WebSocket] = []
 
 # ? REST Endpoints ?
 
+
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """Serve dashboard HTML."""
@@ -143,11 +150,13 @@ async def root():
 
 @app.get("/api/status")
 async def get_status():
-    return JSONResponse({
-        "bot": _bot_state,
-        "signal": _current_signal,
-        "cached_data": list_cached(),
-    })
+    return JSONResponse(
+        {
+            "bot": _bot_state,
+            "signal": _current_signal,
+            "cached_data": list_cached(),
+        }
+    )
 
 
 @app.get("/api/positions")
@@ -202,6 +211,7 @@ async def control(request: Request, action: dict):
 
 # ? WebSocket for real-time updates ?
 
+
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     # Security: Prevent Cross-Site WebSocket Hijacking (CSWSH)
@@ -210,7 +220,9 @@ async def websocket_endpoint(ws: WebSocket):
         parsed_origin = urllib.parse.urlparse(origin)
         host = ws.headers.get("host")
         if host and parsed_origin.netloc != host:
-            logger.warning(f"Rejected WebSocket connection from unexpected origin: {origin}")
+            logger.warning(
+                f"Rejected WebSocket connection from unexpected origin: {origin}"
+            )
             await ws.close(code=1008)
             return
 
@@ -223,13 +235,15 @@ async def websocket_endpoint(ws: WebSocket):
                 elapsed = time.time() - _volume_data["start_time"]
                 _volume_data["uptime_hours"] = elapsed / 3600
 
-            await ws.send_json({
-                "bot": _bot_state,
-                "signal": _current_signal,
-                "performance": _performance,
-                "positions": _positions,
-                "volumes": _volume_data,
-            })
+            await ws.send_json(
+                {
+                    "bot": _bot_state,
+                    "signal": _current_signal,
+                    "performance": _performance,
+                    "positions": _positions,
+                    "volumes": _volume_data,
+                }
+            )
             await asyncio.sleep(1)
     except WebSocketDisconnect:
         if ws in _ws_clients:
@@ -240,6 +254,7 @@ async def websocket_endpoint(ws: WebSocket):
 
 
 # ? Helper functions (called by live trader) ?
+
 
 def update_state(
     status: str | None = None,
@@ -287,7 +302,7 @@ def update_volume(symbol: str, trade_volume: float, trade_pnl: float, trade_fee:
     entry["trades"] += 1
     entry["pnl"] += trade_pnl
     entry["fees"] += trade_fee
-    
+
     # Recalculate total
     _volume_data["total"] = sum(
         m["volume"] for m in _volume_data["per_market"].values()
@@ -295,21 +310,24 @@ def update_volume(symbol: str, trade_volume: float, trade_pnl: float, trade_fee:
 
 
 def _add_log(msg: str):
-    _activity_log.append({
-        "time": time.strftime("%H:%M:%S"),
-        "msg": msg,
-    })
+    _activity_log.append(
+        {
+            "time": time.strftime("%H:%M:%S"),
+            "msg": msg,
+        }
+    )
     if len(_activity_log) > 1000:
         _activity_log.pop(0)
 
 
 # ? Main ?
 
+
 async def run_dashboard(cfg=None):
     """Run the dashboard server. Suitable for asyncio.gather."""
     port = int(os.getenv("DASHBOARD_PORT", "8000"))
     host = os.getenv("DASHBOARD_HOST", "127.0.0.1")
-    
+
     # Try to detect local network IP
     hostname = socket.gethostname()
     try:
@@ -317,7 +335,7 @@ async def run_dashboard(cfg=None):
     except:
         local_ip = "127.0.0.1"
 
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print(f"🚀 DASHBOARD STARTED")
     print(f"Host:    http://{host}:{port}")
     if host == "0.0.0.0":
@@ -326,7 +344,7 @@ async def run_dashboard(cfg=None):
             print(f"Network: http://{local_ip}:{port}")
         print("\n⚠️  WARNING: Dashboard is exposed to the network (0.0.0.0)!")
         print("Restrict to 127.0.0.1 for maximum security.")
-    print("="*50 + "\n")
+    print("=" * 50 + "\n")
 
     config = uvicorn.Config(app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
