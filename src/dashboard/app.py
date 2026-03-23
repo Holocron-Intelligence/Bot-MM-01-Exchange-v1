@@ -37,9 +37,20 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="MM Bot 01 Exchange Dashboard", version="0.2.0")
 
 # Security: Add CORS middleware to prevent cross-origin requests from reading sensitive data
+# Note: origins are configured dynamically based on DASHBOARD_PORT and DASHBOARD_HOST
+_port = int(os.getenv("DASHBOARD_PORT", "8000"))
+_origins = [
+    f"http://127.0.0.1:{_port}",
+    f"http://localhost:{_port}",
+]
+# If bound to a specific IP, add it to allowed origins
+_host = os.getenv("DASHBOARD_HOST", "127.0.0.1")
+if _host not in ("0.0.0.0", "127.0.0.1", "localhost"):
+    _origins.append(f"http://{_host}:{_port}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000", "http://0.0.0.0:8000"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
@@ -324,8 +335,9 @@ async def run_dashboard(cfg=None):
         print(f"Local:   http://localhost:{port}")
         if local_ip != "127.0.0.1":
             print(f"Network: http://{local_ip}:{port}")
-        print("\n⚠️  WARNING: Dashboard is exposed to the network (0.0.0.0)!")
-        print("Restrict to 127.0.0.1 for maximum security.")
+        print("\n⚠️  SECURITY WARNING: Dashboard is exposed to the network (0.0.0.0)!")
+        print("This may allow unauthorized access to bot controls and sensitive data.")
+        print("Restrict to 127.0.0.1 for maximum security unless remote access is required.")
     print("="*50 + "\n")
 
     config = uvicorn.Config(app, host=host, port=port, log_level="warning")
