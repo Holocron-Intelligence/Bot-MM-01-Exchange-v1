@@ -5,7 +5,6 @@ Shares a single O1Client session across multiple traders to avoid conflicts.
 import asyncio
 import logging
 import sys
-import os
 from pathlib import Path
 
 # Add project root to path
