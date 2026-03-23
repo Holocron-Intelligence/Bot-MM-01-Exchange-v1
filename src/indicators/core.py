@@ -82,9 +82,28 @@ def rsi(series: pd.Series, period: int = 14) -> pd.Series:
     return result.rename("rsi")
 
 
+# ? True Range ?
+
+def true_range(df: pd.DataFrame) -> pd.Series:
+    """
+    True Range (Optimized with numpy instead of pd.concat).
+
+    TR = max(high - low, abs(high - close_prev), abs(low - close_prev))
+    """
+    high = df["high"]
+    low = df["low"]
+    close = df["close"]
+
+    tr1 = high - low
+    tr2 = (high - close.shift(1)).abs()
+    tr3 = (low - close.shift(1)).abs()
+    tr = np.fmax(tr1, np.fmax(tr2, tr3))
+    return tr.rename("true_range")
+
+
 # ? ADX ?
 
-def adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
+def adx(df: pd.DataFrame, period: int = 14, tr: pd.Series | None = None) -> pd.DataFrame:
     """
     Average Directional Index with +DI and -DI.
 
@@ -93,13 +112,10 @@ def adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     """
     high = df["high"]
     low = df["low"]
-    close = df["close"]
 
-    # True Range (Optimized with numpy instead of pd.concat)
-    tr1 = high - low
-    tr2 = (high - close.shift(1)).abs()
-    tr3 = (low - close.shift(1)).abs()
-    tr = np.fmax(tr1, np.fmax(tr2, tr3))
+    # True Range
+    if tr is None:
+        tr = true_range(df)
 
     # Directional movement
     up_move = high - high.shift(1)
@@ -131,16 +147,10 @@ def adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
 
 # ? ATR ?
 
-def atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
+def atr(df: pd.DataFrame, period: int = 14, tr: pd.Series | None = None) -> pd.Series:
     """Average True Range."""
-    high = df["high"]
-    low = df["low"]
-    close = df["close"]
-
-    tr1 = high - low
-    tr2 = (high - close.shift(1)).abs()
-    tr3 = (low - close.shift(1)).abs()
-    tr = np.fmax(tr1, np.fmax(tr2, tr3))
+    if tr is None:
+        tr = true_range(df)
 
     return tr.ewm(span=period, adjust=False).mean().rename("atr")
 
@@ -297,12 +307,15 @@ def compute_all(
     # RSI
     result["rsi"] = rsi(df["close"], period=rsi_period)
 
+    # Precompute True Range for sharing between ADX and ATR
+    tr = true_range(df)
+
     # ADX
-    adx_df = adx(df, period=adx_period)
+    adx_df = adx(df, period=adx_period, tr=tr)
     result = pd.concat([result, adx_df], axis=1)
 
     # ATR
-    result["atr"] = atr(df, period=atr_period)
+    result["atr"] = atr(df, period=atr_period, tr=tr)
 
     # Momentum
     result["momentum"] = momentum(df["close"], period=momentum_period)
