@@ -9,8 +9,12 @@ import logging
 import time
 from collections import deque
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from src.config import HeatmapConfig, RiskConfig
 
 logger = logging.getLogger(__name__)
 
@@ -236,7 +240,6 @@ class BacktestHeatmap:
         - High volume at prices above current ? liquidity above (bias long)  
         - High volume at prices below current ? liquidity below (bias short)
         """
-        import pandas as pd  # noqa: F811
 
         if df_window.empty or len(df_window) < 5:
             return LiquidityBias(
