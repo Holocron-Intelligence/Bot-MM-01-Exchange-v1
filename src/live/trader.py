@@ -79,7 +79,7 @@ class LiveTrader:
         # Map symbol -> market_id for REST polling
         self.market_ids: Dict[str, int] = {}
         self.last_trade_times: Dict[str, int] = {}
-        self.market_decimals: Dict[str, tuple[int, int]] = {} # (price_dec, size_dec)
+        self.market_decimals: Dict[str, tuple[int, int, int, int]] = {} # (price_dec, size_dec, factor, price_factor)
         
         # External clients
         self.binance: BinanceDataClient = BinanceDataClient()
@@ -154,7 +154,9 @@ class LiveTrader:
                     continue
                     
                 self.market_ids[symbol] = mi.market_id
-                self.market_decimals[symbol] = (mi.price_decimals, mi.size_decimals) # type: ignore
+                price_dec = mi.price_decimals # type: ignore
+                size_dec = mi.size_decimals # type: ignore
+                self.market_decimals[symbol] = (price_dec, size_dec, 10 ** size_dec, 10 ** price_dec)
                 self.aggregators[symbol] = CandleAggregator(self.config.timeframe)
                 self.mm_states[symbol] = MMSymbolState()
                 self.last_trade_times[symbol] = 0
@@ -452,10 +454,8 @@ class LiveTrader:
 
         half_spread = current_price * (spread_bps / 10000)
 
-        price_dec, size_dec = self.market_decimals[symbol]
-        factor = 10 ** size_dec
+        price_dec, size_dec, factor, price_factor = self.market_decimals[symbol]
         min_size = 1.0 / factor
-        price_factor = 10 ** price_dec
         min_tick = 1.0 / price_factor
         
         max_inv = self.balance * (mm_cfg.max_inventory_pct / 100)
@@ -617,9 +617,7 @@ class LiveTrader:
                 await asyncio.gather(*cancels, return_exceptions=True)
                 await asyncio.sleep(0.3)
                 
-            price_dec, size_dec = self.market_decimals[symbol]
-            factor = 10 ** size_dec
-            price_factor = 10 ** price_dec
+            price_dec, size_dec, factor, price_factor = self.market_decimals[symbol]
             size = int(size * factor) / factor
             
             side = "SELL" if state.inventory > 0 else "BUY"
