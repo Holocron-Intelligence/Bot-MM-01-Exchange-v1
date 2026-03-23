@@ -8,7 +8,6 @@ Run: python -m src.dashboard.app
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 import socket
@@ -21,7 +20,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPExcept
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-import urllib.parse
+from urllib.parse import urlparse
 
 import uvicorn
 
@@ -29,7 +28,6 @@ import uvicorn
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.config import load_config
 from src.data.storage import list_cached
 
 logger = logging.getLogger(__name__)
@@ -46,7 +44,7 @@ app.add_middleware(
 )
 
 
-from src.config import DATA_DIR, ASSETS_DIR, STATIC_DIR
+from src.config import DATA_DIR, STATIC_DIR
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 if STATIC_DIR.exists():
@@ -207,7 +205,7 @@ async def websocket_endpoint(ws: WebSocket):
     # Security: Prevent Cross-Site WebSocket Hijacking (CSWSH)
     origin = ws.headers.get("origin")
     if origin:
-        parsed_origin = urllib.parse.urlparse(origin)
+        parsed_origin = urlparse(origin)
         host = ws.headers.get("host")
         if host and parsed_origin.netloc != host:
             logger.warning(f"Rejected WebSocket connection from unexpected origin: {origin}")
