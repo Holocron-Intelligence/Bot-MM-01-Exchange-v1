@@ -101,15 +101,14 @@ class AdaptiveGrid:
         if spacing <= 0:
             spacing = mid_price * 0.001  # Fallback: 0.1% of price
 
+        buy_mult, sell_mult = self._get_bias_multipliers(bias_score, regime)
+
         levels: list[GridLevel] = []
 
         for i in range(1, self.num_levels + 1):
             # ? Buy levels (below mid) ?
             buy_price = mid_price - (spacing * i)
-            buy_size = self._compute_size(
-                base_size, bias_score, side="BUY",
-                level_idx=i, regime=regime,
-            )
+            buy_size = self._compute_size(base_size, buy_mult, level_idx=i)
             buy_stop = buy_price - (atr_value * stop_atr_mult)
 
             levels.append(GridLevel(
@@ -121,10 +120,7 @@ class AdaptiveGrid:
 
             # ? Sell levels (above mid) ?
             sell_price = mid_price + (spacing * i)
-            sell_size = self._compute_size(
-                base_size, bias_score, side="SELL",
-                level_idx=i, regime=regime,
-            )
+            sell_size = self._compute_size(base_size, sell_mult, level_idx=i)
             sell_stop = sell_price + (atr_value * stop_atr_mult)
 
             levels.append(GridLevel(
@@ -149,16 +145,13 @@ class AdaptiveGrid:
         self._current_grid = state
         return state
 
-    def _compute_size(
+    def _get_bias_multipliers(
         self,
-        base_size: float,
         bias_score: float,
-        side: str,
-        level_idx: int,
         regime: str,
-    ) -> float:
+    ) -> tuple[float, float]:
         """
-        Compute size for a grid level with asymmetric bias weighting.
+        Compute base bias multipliers for BUY and SELL sides.
 
         - If bias > 0 (liquidity above ? expect price to go up):
           ? Increase BUY sizes, decrease SELL sizes
@@ -168,18 +161,30 @@ class AdaptiveGrid:
         In trend mode, bias effect is amplified.
         """
         # Bias multiplier: 0.5 to 1.5
-        if side == "BUY":
-            bias_mult = 1.0 + (bias_score * 0.5)  # Positive bias ? more buys
-        else:
-            bias_mult = 1.0 - (bias_score * 0.5)  # Positive bias ? fewer sells
+        buy_mult = 1.0 + (bias_score * 0.5)
+        sell_mult = 1.0 - (bias_score * 0.5)
 
         # Clamp
-        bias_mult = max(0.2, min(2.0, bias_mult))
+        buy_mult = max(0.2, min(2.0, buy_mult))
+        sell_mult = max(0.2, min(2.0, sell_mult))
 
         # In trend mode, amplify bias effect
         if regime == "trend":
-            bias_mult = 1.0 + (bias_mult - 1.0) * 1.5
+            buy_mult = 1.0 + (buy_mult - 1.0) * 1.5
+            sell_mult = 1.0 + (sell_mult - 1.0) * 1.5
 
+        return buy_mult, sell_mult
+
+    def _compute_size(
+        self,
+        base_size: float,
+        bias_mult: float,
+        level_idx: int,
+    ) -> float:
+        """
+        Compute final size for a grid level based on precomputed bias
+        and distance decay.
+        """
         # Reduce size for farther levels (1st level = 100%, Nth = 60%)
         distance_decay = 1.0 - (level_idx - 1) * 0.1
         distance_decay = max(0.6, distance_decay)
