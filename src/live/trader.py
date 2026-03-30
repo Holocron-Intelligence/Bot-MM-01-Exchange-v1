@@ -663,6 +663,14 @@ class LiveTrader:
         state.avg_entry = 0.0
         state.candles_in_position = 0
 
+        # Sync saldo reale e controlla drawdown immediatamente dopo ogni chiusura
+        await self._sync_account_balance()
+        dd_state = self.drawdown_monitor.update(self.balance)
+        if dd_state.is_halted and not self.halted:
+            logger.error(f"DRAWDOWN BREAKER (post-close): {dd_state.halt_reason}. HALTING ALL TRADES.")
+            self.halted = True
+            await self._cancel_all_orders()
+
     async def _check_stop_loss(self, symbol: str, current_price: float):
         state = self.mm_states[symbol]
         if state.inventory == 0:
@@ -768,6 +776,15 @@ class LiveTrader:
         logger.info(f"[{symbol}] MM {side} Fill {size:.4f} @ {price:.4f} PNL: ${pnl:.2f}")
         update_volume(symbol, trade_vol, pnl, fee)
         add_fill(symbol, side, price, size, pnl, fee)
+
+        # Se c'è una perdita realizzata, sincronizza il saldo reale e controlla drawdown
+        if pnl < 0 and not self.config.paper_mode:
+            await self._sync_account_balance()
+            dd_state = self.drawdown_monitor.update(self.balance)
+            if dd_state.is_halted and not self.halted:
+                logger.error(f"DRAWDOWN BREAKER (post-fill): {dd_state.halt_reason}. HALTING ALL TRADES.")
+                self.halted = True
+                await self._cancel_all_orders()
 
     async def _cancel_all_orders(self):
         """Emergency method to cancel all known active orders."""
